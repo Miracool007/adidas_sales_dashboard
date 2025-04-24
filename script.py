@@ -1,14 +1,17 @@
+# Importing the needed libraries
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.graph_objects as go
 
+# Defining the layout of my streamlit page
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 
+# Streamlit Dashboard Title
 st.title("Adidas Sales Dashboard 📊")
 
-
+# Loading my Dataset
 @st.cache_data
 def load_data():
     df = pd.read_csv("Dataset.csv")
@@ -16,11 +19,13 @@ def load_data():
 
 df = load_data()
 
+# Creating my Slicers
 retailer_options = ["All"] + sorted(df["Retailer"].unique().tolist())
 month_options = ["All"] + sorted(df["Month"].unique().tolist())
 state_options = ["All"] + sorted(df["State"].unique().tolist())
 revenue = df["Total Sales"].sum()
 
+# Adding the slicers to my sidebar menu
 st.sidebar.header("🔍 Slicers")
 with st.sidebar.form(key="filter_form"):
     retailer = st.selectbox("Retailer", retailer_options)
@@ -29,7 +34,7 @@ with st.sidebar.form(key="filter_form"):
 
     apply_filter = st.form_submit_button("Apply Filters")
 
-
+# Specifying the action to be performed if the "Apply Filter" button is pressed
 if apply_filter:
     filter_df = df.copy()
 
@@ -46,7 +51,7 @@ else:
     filter_df = df.copy()
 
 
-
+#Creating my Key Metrics
 col1, col2, col3, col4 = st.columns(4)
 
 col1.metric("📅 Total Months in Review", df["Month"].nunique())
@@ -54,6 +59,7 @@ col2.metric("🛒 Number of Retailers", df["Retailer"].nunique())
 col3.metric("🏙️ Total States in Review", df["State"].nunique())
 col4.metric("💸 Total Revenue Generated", df["Total Sales"].sum())
 
+# Creating the metrics for the selected values from the slicers
 st.markdown("### Selected Values")
 
 col5, col6, col7, col8 = st.columns(4)
@@ -63,9 +69,7 @@ col6.metric("Selected Retailer", retailer)
 col7.metric("Selected State", state)
 col8.metric("Total Revenue of selected metrics", revenue)
 
-
-
-
+#Creating the first two charts
 chart1, chart2 = st.columns((5,5))
 
 with chart1:
@@ -75,13 +79,15 @@ with chart1:
     plt.xticks(rotation=45)
     plt.xlabel("Retailers")
     plt.ylabel("Total Sales")
+    
+    # Adding Data Labels to the chart
     for bar in chart.patches:
         count = bar.get_height()
         if count > 0:  # Only show label for visible bars
             ax.text(
                 bar.get_x() + bar.get_width() / 2,
-                count + 0.5,                     # slightly above the bar
-                f'{int(count)}',                # format count
+                count + 0.5,                     
+                f'{int(count)}',                
                 ha='center',
                 va='bottom',
                 fontsize=10,
@@ -98,7 +104,7 @@ with chart2:
     plt.xticks(rotation=45)  
     st.pyplot(fig)
 
-
+# Creating the next two charts
 ch1, ch2 = st.columns((5,5))
 
 with ch1:
@@ -107,6 +113,7 @@ with ch1:
     labels = counts.index
     values = counts.values
 
+    # Adding Data Labels to the Pie-Chart
     def format_label(pct, all_vals):
         absolute = int(round(pct/100 * sum(all_vals)))
         return f"{pct:.1f}%\n({absolute})"
@@ -127,6 +134,9 @@ with ch2:
     plt.xticks(rotation=45)
     st.pyplot(fig)
 
+# The dataset I'm working with contains states in the USA. The best option to visualize the revenue_per_state is using the map Chart.
+# To use this map chart on the plotly.graph_objects library, there are certain conditions you need to apply.
+# Firstly you have to get the abbreviations of all the states, and store it as a dictionary, example below;
 
 state_abbrev = {
     'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR',
@@ -146,8 +156,11 @@ state_abbrev = {
     'Wisconsin': 'WI', 'Wyoming': 'WY'
 }
 
+# Map each state on the "State" column in your dataset to their abbrevations
 filter_df["abbrev"] = filter_df["State"].map(state_abbrev)
 
+# Next thing is to get the cordinates of all the states and store it in a dictionary format, example below. 
+# You can simply get this using ChatGPT
 
 state_coords = {
     'New York': [43.0000, -75.0000],
@@ -202,16 +215,15 @@ state_coords = {
     'New Hampshire': [43.1939, -71.5724],
 }
 
+# Then create two new columns "lat" (short for latitude) and "lon" (short for longitude). Mapping each state's longitude and latitude 
 filter_df['lat'] = filter_df['State'].map(lambda x: state_coords.get(x, [None, None])[0])
 filter_df['lon'] = filter_df['State'].map(lambda x: state_coords.get(x, [None, None])[1])
 
 state_sales = filter_df.groupby("abbrev")["Total Sales"].sum().reset_index()
 tet = state_sales["abbrev"] + ": $" + state_sales["Total Sales"].apply(lambda x: f"{x:,.0f}")
 
-
+# Creating the map chart
 fig = go.Figure()
-
-# Add choropleth map
 fig.add_trace(go.Choropleth(
     locations=state_sales['abbrev'],
     z=state_sales['Total Sales'],
@@ -243,11 +255,11 @@ fig.update_layout(
 st.markdown("### 🌍 Distribution of Revenue across States")
 st.plotly_chart(fig)
 
-
-
+# Adding a preview of the dataset used
 st.markdown("### 🧾 Data Preview")
 st.dataframe(data=df.head(20))
 
+# Adding my Socials 😏
 st.markdown('''
 ----
 ### Created with ❤️ by Miracle 😊\n
@@ -256,3 +268,4 @@ st.markdown('''
 
 ''', unsafe_allow_html=True)
 
+# After going through and copying this, I hope you all can be able to create your own interactive visuals using the streamlit library🙏
